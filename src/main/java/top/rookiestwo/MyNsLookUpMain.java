@@ -1,83 +1,57 @@
 package top.rookiestwo;
 
 import org.pcap4j.core.*;
-import org.pcap4j.packet.IpV4Packet;
-import org.pcap4j.packet.Packet;
 import org.pcap4j.util.MacAddress;
 
 import java.io.EOFException;
-import java.net.Inet4Address;
 import java.net.InetAddress;
+import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.concurrent.TimeoutException;
 
 public class MyNsLookUpMain {
 
-    //本机网卡MAC：84:7b:57:c5:ac:b0
-    MacAddress hostMAC=MacAddress.getByName("84:7b:57:c5:ac:b0");
-    //网关MAC：10-4f-58-6c-0c-00
-    MacAddress gatewayMAC=MacAddress.getByName("10-4f-58-6c-0c-00");
+    public static InetAddress usingDNS;
+    public static InetAddress hostIP;
+    public static MacAddress hostMAC;
+    //硬编码网关MAC地址，我查了一圈，内网、外网。真的不好获取，可能其他语言好获取吧。
+    //网关的MAC让jvm来干是真拿不到。我唯一能想到的办法就是开个进程跑ipconfig指令然后用正则表达式匹配。
+    //但是这样写太丑陋了，我觉得还不如硬编码，或者直接让用户输入。
+    //反正是北邮内网，还是直接硬编码吧。该MAC仅适用于北京邮电大学内网。
+    //ps:本来用java写链路层我就觉得挺抽象的了（
+    //This MAC address only works in BUPT network system.Please set your own gateway MAC.
+    public static MacAddress gatewayMAC=MacAddress.getByName("10-4f-58-6c-0c-00");
+    public static int requestTimes=0;//程序从启动开始的请求次数，每次构建包的时候应加1
 
-    String hostIP="10.29.146.170";
+    //网络配置部分
+    public static int timeoutTime=5000;//超时时间，单位为毫秒
+
+    public static PacketIOHandler PacketHandler;
 
     public static void main(String[] args) throws PcapNativeException, NotOpenException, TimeoutException, UnknownHostException, SocketException, EOFException {
+        //启动时初始化，获取当前网络环境信息
+        Initialize();
 
-        /*String domainName="wheatserver.top";
-        byte[] domainBytes=domainToBytes(domainName);
-        for (byte b : domainBytes) {
-            System.out.printf("%02X ", b);
-        }
-        System.out.println();
-        int portTry=49152;
-        while(!isPortAvailable(portTry)){
-            portTry++;
-        }
-        System.out.println(portTry);
-        //以字节数组形式构建hostPort
-        byte[] hostPort=new byte[2];
-        hostPort[0] = (byte) ((portTry >> 8) & 0xFF);
-        hostPort[1] = (byte) (portTry & 0xFF);
-        for (byte b : hostPort) {
-            System.out.printf("%02X ", b);
-        }
-        System.out.println();*/
+        CommandHandler command=new CommandHandler();
 
-        //测试
-        //本机IP为：
-        InetAddress addr = InetAddress.getByName("192.168.137.228");
-        String ipToCapture="1.1.1.1";
-        PcapNetworkInterface nif = Pcaps.getDevByAddress(addr);
-        int snapLen = 65536;
-        PcapNetworkInterface.PromiscuousMode mode = PcapNetworkInterface.PromiscuousMode.PROMISCUOUS;
-        //监听超时时间5000ms
-        int timeout = 5000;
-        PcapHandle handle = nif.openLive(snapLen, mode, timeout);
-
-        //构建数据包并发送
-        DNSPacketBuilder dnsBuilder=new DNSPacketBuilder();
-        byte[] bytePacket=dnsBuilder.build("wheatserver.top", "1.1.1.1");
-        for (byte b : bytePacket) {
-            System.out.printf("%02X ", b);
-        }
-        System.out.println();
-        handle.sendPacket(bytePacket);
-
-
-
-        //根据bpfExpression来过滤数据包，此处只获取跟1.1.1.1有关的数据包
-        handle.setFilter("ip dst "+ipToCapture,BpfProgram.BpfCompileMode.OPTIMIZE);
-        //getNextPacketEx为等待下一个包到来，会阻塞线程
-        Packet packet = handle.getNextPacketEx();
-        handle.close();
-        IpV4Packet ipV4Packet = packet.get(IpV4Packet.class);
-        Inet4Address srcAddr = ipV4Packet.getHeader().getSrcAddr();
-        Inet4Address dstAddr = ipV4Packet.getHeader().getDstAddr();
-        System.out.println(srcAddr);
-        System.out.println(dstAddr);
-        System.out.println(packet);
     }
 
-    //为了解决开发最大困难-发包和包的构筑临时用的方法
+    private static void Initialize() throws UnknownHostException, SocketException {
+        //获取本机IP从而获得MAC
+        MyNsLookUpMain.hostIP= InetAddress.getLocalHost();
+        System.out.println("当前本机IP为: "+MyNsLookUpMain.hostIP.getHostAddress());
+        NetworkInterface networkInterface = NetworkInterface.getByInetAddress(MyNsLookUpMain.hostIP);
+        MyNsLookUpMain.hostMAC= MacAddress.getByAddress(networkInterface.getHardwareAddress());
+        System.out.println("当前网卡MAC为: "+ MyNsLookUpMain.hostMAC);
+        MyNsLookUpMain.usingDNS= InetAddress.getByName("1.1.1.1");
+        System.out.println("当前使用的DNS服务器IP为: "+ MyNsLookUpMain.usingDNS.getHostAddress());
 
+        PacketHandler=new PacketIOHandler();
+    }
+
+    public static void close() {
+        System.out.println("关闭主进程...");
+        System.exit(0);
+    }
 }
