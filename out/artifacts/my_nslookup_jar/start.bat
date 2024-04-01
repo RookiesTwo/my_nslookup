@@ -1,0 +1,1 @@
+"G:\Javas\zulu17.48.15-ca-jdk17.0.10-win_x64\bin\java.exe" -jar my_nslookup.jar

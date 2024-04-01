@@ -4,7 +4,6 @@ import org.pcap4j.core.*;
 import org.pcap4j.packet.DnsPacket;
 import org.pcap4j.packet.IllegalRawDataException;
 import org.pcap4j.packet.Packet;
-import org.pcap4j.packet.namednumber.DnsResourceRecordType;
 
 import java.io.EOFException;
 import java.net.SocketException;
@@ -15,7 +14,7 @@ import java.util.concurrent.TimeoutException;
 
 public class PacketIOHandler {
 
-    public void runDNSRequest(String targetDomain){
+    public void runDNSRequest(String targetDomain) {
         ExecutorService executor= Executors.newFixedThreadPool(2);
         DnsPacket packetInfo;
         //开一个线程发包
@@ -28,20 +27,19 @@ public class PacketIOHandler {
         });
         try {
             packetInfo=listenForDNSResponse();
-        } catch (PcapNativeException | NotOpenException | EOFException | TimeoutException | IllegalRawDataException e) {
+            //仅支持A类型和CNAME类型
+            packetInfo.getHeader().getAnswers().forEach(record->{
+                //偷懒了，直接用pcap4j提供的方法了
+                System.out.println("\n\nName:    "+targetDomain);
+                System.out.println(record.getRData());
+            });
+        }  catch (TimeoutException e){
+            System.out.println("响应超时。");
+        } catch( PcapNativeException | NotOpenException | EOFException | IllegalRawDataException e){
             throw new RuntimeException(e);
         }
         //System.out.println(packetInfo);
-        //仅支持A类型和CNAME类型
-        packetInfo.getHeader().getAnswers().forEach(record->{
-            MyNsLookUpMain.handler.PrintInfo();
-            if(record.getDataType() == DnsResourceRecordType.A){
-                System.out.println("Name:    "+record.getName().getName());
-                //System.out.println("Address:  "+record.);
-            }else if(record.getDataType()==DnsResourceRecordType.CNAME){
 
-            }
-        });
         executor.shutdown();
     }
 
