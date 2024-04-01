@@ -17,14 +17,24 @@ public class CommandHandler {
             } else {
                 System.out.println("Invalid IP address format.");
             }
-        } else if (command.matches("^[a-zA-Z0-9.\\-]+$")) {
-            sendDNSRequest(command);
         } else if (command.equalsIgnoreCase("exit")) {
             MyNsLookUpMain.close();//关闭进程
-        } else {
+        } else if (command.matches("^[a-zA-Z0-9.\\-]+$")) {
+            sendDNSRequest(command);
+        }  else {
             System.out.println("Invalid command");
         }
     }
+
+    public void PrintInfo(){
+        System.out.println("DNS Server Address:");
+        System.out.println(MyNsLookUpMain.usingDNS.getHostAddress());
+        System.out.println();
+    }
+    public void PrintInput() {
+        System.out.print("> ");
+    }
+
     private void setDnsServer(String targetServer) {
         try{
             MyNsLookUpMain.usingDNS= InetAddress.getByName(targetServer);
@@ -42,4 +52,6 @@ public class CommandHandler {
         Matcher matcher = ipPattern.matcher(ip);
         return matcher.matches();
     }
+
+
 }

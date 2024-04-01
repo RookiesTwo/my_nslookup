@@ -1,14 +1,15 @@
 package top.rookiestwo;
 
-import org.pcap4j.core.*;
+import org.pcap4j.core.PcapNetworkInterface;
 import org.pcap4j.util.MacAddress;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
-import java.io.EOFException;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.net.UnknownHostException;
-import java.util.concurrent.TimeoutException;
+import java.util.Scanner;
 
 public class MyNsLookUpMain {
 
@@ -29,25 +30,36 @@ public class MyNsLookUpMain {
 
     public static PacketIOHandler PacketHandler;
 
-    public static void main(String[] args) throws PcapNativeException, NotOpenException, TimeoutException, UnknownHostException, SocketException, EOFException {
+    public static CommandHandler handler;
+
+    public static void main(String[] args) throws UnknownHostException, SocketException {
         //启动时初始化，获取当前网络环境信息
         Initialize();
 
-        CommandHandler command=new CommandHandler();
+        Scanner scanner = new Scanner(System.in);
 
+        handler=new CommandHandler();
+        while(true){
+            handler.PrintInfo();
+            handler.PrintInput();
+            String command = scanner.nextLine();
+            handler.run(command);
+        }
     }
 
     private static void Initialize() throws UnknownHostException, SocketException {
         //获取本机IP从而获得MAC
         MyNsLookUpMain.hostIP= InetAddress.getLocalHost();
-        System.out.println("当前本机IP为: "+MyNsLookUpMain.hostIP.getHostAddress());
+        System.out.println("[Initial]当前本机IP为: "+MyNsLookUpMain.hostIP.getHostAddress());
         NetworkInterface networkInterface = NetworkInterface.getByInetAddress(MyNsLookUpMain.hostIP);
         MyNsLookUpMain.hostMAC= MacAddress.getByAddress(networkInterface.getHardwareAddress());
-        System.out.println("当前网卡MAC为: "+ MyNsLookUpMain.hostMAC);
+        System.out.println("[Initial]当前网卡MAC为: "+ MyNsLookUpMain.hostMAC);
         MyNsLookUpMain.usingDNS= InetAddress.getByName("1.1.1.1");
-        System.out.println("当前使用的DNS服务器IP为: "+ MyNsLookUpMain.usingDNS.getHostAddress());
+        System.out.println("[Initial]当前使用的DNS服务器IP为: "+ MyNsLookUpMain.usingDNS.getHostAddress());
 
         PacketHandler=new PacketIOHandler();
+        Logger logger= LoggerFactory.getLogger(PcapNetworkInterface.class);
+        System.out.println(logger.getName());
     }
 
     public static void close() {
