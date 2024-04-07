@@ -57,7 +57,7 @@ public class DNSPacketBuilder {
         //由于专用于查询dns，目标端口永远是53。硬编码？启动！
         byte[] dstPort=_2ByteArrayBuild(53);
 
-        byte[] length = _2ByteArrayBuild(20); // UDP数据包长度，包括UDP头部和数据部分
+        byte[] udpLength = _2ByteArrayBuild(20); // UDP数据包长度，包括UDP头部和数据部分
         byte[] udpChecksum = _2ByteArrayBuild(0x0000); // 校验和，初始为0
 
         //构建dns请求头部
@@ -77,7 +77,7 @@ public class DNSPacketBuilder {
         //ip包头的totalLength
         totalLength=_2ByteArrayBuild(ipLength);
         //udp包头的length
-        length=_2ByteArrayBuild(ipLength-20);
+        udpLength=_2ByteArrayBuild(ipLength-20);
 
         //计算IP头和UDP头的checksum值
         ByteBuffer ipHeadBuffer=ByteBuffer.allocate(/*ip头*/20);
@@ -102,7 +102,7 @@ public class DNSPacketBuilder {
         //udp包头
         udpHeadBuffer.put(hostPort)
                 .put(dstPort)
-                .put(length)
+                .put(udpLength)
                 .put(udpChecksum);//该值目前为0
         //udp报文，即payload
         udpHeadBuffer.put(transactionID)
@@ -141,7 +141,7 @@ public class DNSPacketBuilder {
         //udp包头
         buffer.put(hostPort)
                 .put(dstPort)
-                .put(length)
+                .put(udpLength)
                 .put(udpChecksum);
 
         //dns头部

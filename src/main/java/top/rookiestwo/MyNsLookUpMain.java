@@ -58,8 +58,7 @@ public class MyNsLookUpMain {
         System.out.println("[Initial]当前使用的DNS服务器IP为: "+ MyNsLookUpMain.usingDNS.getHostAddress());
 
         PacketHandler=new PacketIOHandler();
-        Logger logger= LoggerFactory.getLogger(PcapNetworkInterface.class);
-        System.out.println(logger.getName());
+
     }
 
     public static void close() {
