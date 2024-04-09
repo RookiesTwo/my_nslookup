@@ -14,7 +14,17 @@ import java.util.concurrent.TimeoutException;
 
 public class PacketIOHandler {
 
-    public void runDNSRequest(String targetDomain) {
+    PcapNetworkInterface nif;
+    int snapLen = 65536;
+    PcapNetworkInterface.PromiscuousMode mode = PcapNetworkInterface.PromiscuousMode.PROMISCUOUS;
+    public PacketIOHandler() throws PcapNativeException {
+        nif = Pcaps.getDevByAddress(MyNsLookUpMain.hostIP);
+    }
+
+    public void runDNSRequest(String targetDomain){
+        runDNSRequest(targetDomain,false);
+    }
+    public void runDNSRequest(String targetDomain,boolean ifPrintReceivePacket) {
         ExecutorService executor= Executors.newFixedThreadPool(2);
         DnsPacket packetInfo;
         //开一个线程发包
@@ -31,7 +41,12 @@ public class PacketIOHandler {
             packetInfo.getHeader().getAnswers().forEach(record->{
                 //偷懒了，直接用pcap4j提供的方法了
                 System.out.println("\n\nName:    "+targetDomain);
+                System.out.println(record.getDataType());
                 System.out.println(record.getRData());
+                if(ifPrintReceivePacket){
+                    System.out.println("数据包内容:");
+                    System.out.println(packetInfo);
+                }
             });
         }  catch (TimeoutException e){
             System.out.println("响应超时。");
@@ -42,15 +57,13 @@ public class PacketIOHandler {
 
         executor.shutdown();
     }
+    //默认不打印整个数据包
+
+
 
     //监听下一个与usingDNS的IP地址有关的数据包
     //
     private DnsPacket listenForDNSResponse() throws PcapNativeException, NotOpenException, EOFException, TimeoutException, IllegalRawDataException {
-
-        PcapNetworkInterface nif = Pcaps.getDevByAddress(MyNsLookUpMain.hostIP);
-        int snapLen = 65536;
-        PcapNetworkInterface.PromiscuousMode mode = PcapNetworkInterface.PromiscuousMode.PROMISCUOUS;
-
         PcapHandle handle = nif.openLive(snapLen, mode, MyNsLookUpMain.timeoutTime);
         //根据bpfExpression来过滤数据包，此处只获取指定DNS发送的数据包
         handle.setFilter("ip src "+MyNsLookUpMain.usingDNS.getHostAddress(),BpfProgram.BpfCompileMode.OPTIMIZE);
@@ -71,10 +84,6 @@ public class PacketIOHandler {
     //构建并发送查询指定域名的IP的数据包
     //此方法最好不要在主线程运行
     private void buildAndSendDNSRequest(String domain) throws PcapNativeException, SocketException, UnknownHostException, NotOpenException {
-        PcapNetworkInterface nif = Pcaps.getDevByAddress(MyNsLookUpMain.hostIP);
-        int snapLen = 65536;
-        PcapNetworkInterface.PromiscuousMode mode = PcapNetworkInterface.PromiscuousMode.PROMISCUOUS;
-
         PcapHandle handle = nif.openLive(snapLen, mode, MyNsLookUpMain.timeoutTime);
         //构建数据包并发送
         MyNsLookUpMain.requestTimes++;

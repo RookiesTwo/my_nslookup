@@ -7,19 +7,28 @@ import java.util.regex.Matcher;
 
 public class CommandHandler {
     private final Pattern ipPattern = Pattern.compile("^\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}$");
+    private final Pattern domainPattern=Pattern.compile("^[a-zA-Z0-9.\\-]+$");
 
-    //此类的方法应当只在主线程执行
+    //运行指令
     public void run(String command) {
-        if (command.startsWith("server ")) {
+        if (command.startsWith("server ")) {//修改dns服务器指令
             String ip = command.substring(7);
             if (isValidIp(ip)) {
                 setDnsServer(ip);
             } else {
                 System.out.println("Invalid IP address format.");
             }
+        }
+        else if(command.startsWith("print ")){//
+            String Domain=command.substring(6);
+            if (isValidDomain(Domain)){
+                MyNsLookUpMain.PacketHandler.runDNSRequest(Domain,true);
+            } else {
+                System.out.println("Invalid Domain format.");
+            }
         } else if (command.equalsIgnoreCase("exit")) {
             MyNsLookUpMain.close();//关闭进程
-        } else if (command.matches("^[a-zA-Z0-9.\\-]+$")) {
+        } else if (isValidDomain(command)) {//解析指令
             sendDNSRequest(command);
         }  else {
             System.out.println("Invalid command");
@@ -27,6 +36,7 @@ public class CommandHandler {
     }
 
     public void PrintInfo(){
+        System.out.println();
         System.out.println("DNS Server Address:");
         System.out.println(MyNsLookUpMain.usingDNS.getHostAddress());
         System.out.println();
@@ -53,5 +63,8 @@ public class CommandHandler {
         return matcher.matches();
     }
 
-
+    private boolean isValidDomain(String domain){
+        Matcher matcher=domainPattern.matcher(domain);
+        return matcher.matches();
+    }
 }
