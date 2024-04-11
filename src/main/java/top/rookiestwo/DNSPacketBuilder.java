@@ -18,9 +18,10 @@ public class DNSPacketBuilder {
         hostMAC=MyNsLookUpMain.hostMAC;
     }
     public byte[] build(String inputDomain,String dnsServerIP) throws UnknownHostException {
-        //构建以太网header
+        //依照老师的要求，手搓数据包
 
-        //依照老师的要求，手搓数据包，第一步，获取MAC字节码
+        // 第一步，获取MAC字节码
+        //构建以太网header
         byte[] gatewayBytes=MyNsLookUpMain.gatewayMAC.getAddress();
         byte[] hostBytes=hostMAC.getAddress();
         //由于是ipv4
